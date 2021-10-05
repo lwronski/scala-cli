@@ -3,14 +3,15 @@ on:
   push:
     branches:
     - master
+    - feature/install-home
     tags:
     - "v*"
   pull_request:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  group: ${{ github.ref }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   jvm-tests:
