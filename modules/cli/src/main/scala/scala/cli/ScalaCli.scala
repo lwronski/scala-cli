@@ -113,7 +113,7 @@ object ScalaCli {
         sys.exit(1)
       case Right((launcherOpts, args0)) =>
         launcherOpts.cliVersion.map(_.trim).filter(_.nonEmpty) match {
-          case Some(ver) =>
+          case Some(ver) if ver != Constants.version.stripPrefix(".") =>
             val powerArgs =
               if (launcherOpts.power) Seq("--power")
               else Nil
