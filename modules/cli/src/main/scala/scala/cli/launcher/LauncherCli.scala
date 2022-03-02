@@ -59,7 +59,7 @@ object LauncherCli {
         remainingArgs,
         logger,
         allowExecve = true
-      )
+      ).waitFor()
 
     sys.exit(exitCode)
   }

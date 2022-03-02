@@ -194,7 +194,7 @@ object Test extends ScalaCommand[TestOptions] {
           extraArgs,
           logger,
           allowExecve = allowExecve
-        )
+        ).waitFor()
     }
   }
 

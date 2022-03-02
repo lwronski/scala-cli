@@ -42,7 +42,10 @@ object Run extends ScalaCommand[RunOptions] {
 
     val compilerMaker = options.shared.compilerMaker(threads)
 
-    def maybeRun(build: Build.Successful, allowTerminate: Boolean): Either[BuildException, Unit] =
+    def maybeRun(
+      build: Build.Successful,
+      allowTerminate: Boolean
+    ): Either[BuildException, Process] =
       maybeRunOnce(
         inputs.workspace,
         inputs.projectName,
@@ -65,6 +68,7 @@ object Run extends ScalaCommand[RunOptions] {
       Update.checkUpdateSafe(logger)
 
     if (options.watch.watch) {
+      var processOpt = Option.empty[Process]
       val watcher = Build.watch(
         inputs,
         initialBuildOptions,
@@ -75,10 +79,12 @@ object Run extends ScalaCommand[RunOptions] {
         partial = None,
         postAction = () => WatchUtil.printWatchMessage()
       ) { res =>
+        processOpt.map(_.destroyForcibly())
         res.orReport(logger).map(_.main).foreach {
           case s: Build.Successful =>
-            maybeRun(s, allowTerminate = false)
+            val maybeProcess = maybeRun(s, allowTerminate = false)
               .orReport(logger)
+            processOpt = maybeProcess
           case _: Build.Failed =>
             System.err.println("Compilation failed")
         }
@@ -100,8 +106,9 @@ object Run extends ScalaCommand[RunOptions] {
           .orExit(logger)
       builds.main match {
         case s: Build.Successful =>
-          maybeRun(s, allowTerminate = true)
+          val process = maybeRun(s, allowTerminate = true)
             .orExit(logger)
+          process.waitFor()
         case _: Build.Failed =>
           System.err.println("Compilation failed")
           sys.exit(1)
@@ -118,7 +125,7 @@ object Run extends ScalaCommand[RunOptions] {
     allowExecve: Boolean,
     exitOnError: Boolean,
     jvmRunner: Boolean
-  ): Either[BuildException, Unit] = either {
+  ): Either[BuildException, Process] = either {
 
     val mainClassOpt = build.options.mainClass.filter(_.nonEmpty) // trim it too?
       .orElse {
@@ -156,9 +163,9 @@ object Run extends ScalaCommand[RunOptions] {
     logger: Logger,
     allowExecve: Boolean,
     exitOnError: Boolean
-  ): Either[BuildException, Boolean] = either {
+  ): Either[BuildException, Process] = either {
 
-    val retCode = build.options.platform.value match {
+    val process = build.options.platform.value match {
       case Platform.JS =>
         val linkerConfig = build.options.scalaJsOptions.linkerConfig(logger)
         val res =
@@ -198,17 +205,20 @@ object Run extends ScalaCommand[RunOptions] {
         )
     }
 
-    if (retCode != 0)
-      if (exitOnError)
-        sys.exit(retCode)
-      else {
-        val red      = Console.RED
-        val lightRed = "\u001b[91m"
-        val reset    = Console.RESET
-        System.err.println(s"${red}Program exited with return code $lightRed$retCode$red.$reset")
-      }
+    process.onExit().thenApply { p1 =>
+      val retCode = p1.exitValue()
+      if (retCode != 0)
+        if (exitOnError)
+          sys.exit(retCode)
+        else {
+          val red      = Console.RED
+          val lightRed = "\u001b[91m"
+          val reset    = Console.RESET
+          System.err.println(s"${red}Program exited with return code $lightRed$retCode$red.$reset")
+        }
+    }
 
-    retCode == 0
+    process
   }
 
   def withLinkedJs[T](

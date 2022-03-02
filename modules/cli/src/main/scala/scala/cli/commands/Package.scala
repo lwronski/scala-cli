@@ -761,7 +761,7 @@ object Package extends ScalaCommand[PackageOptions] {
             "scala.scalanative.cli.ScalaNativeLd",
             args,
             logger
-          )
+          ).waitFor()
         if (exitCode == 0)
           NativeBuilderHelper.updateProjectAndOutputSha(dest, nativeWorkDir, cacheData.projectSha)
         else
