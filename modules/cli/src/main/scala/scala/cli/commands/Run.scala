@@ -9,6 +9,7 @@ import scala.build.internal.{Constants, Runner}
 import scala.build.options.Platform
 import scala.build.{Build, BuildThreads, Inputs, Logger}
 import scala.cli.CurrentParams
+import scala.cli.internal.ProcUtil
 import scala.util.Properties
 
 object Run extends ScalaCommand[RunOptions] {
@@ -67,7 +68,7 @@ object Run extends ScalaCommand[RunOptions] {
     if (CommandUtils.shouldCheckUpdate)
       Update.checkUpdateSafe(logger)
 
-    if (options.watch.watch) {
+    if (options.watch.isWatchMode) {
       var processOpt = Option.empty[Process]
       val watcher = Build.watch(
         inputs,
@@ -79,12 +80,16 @@ object Run extends ScalaCommand[RunOptions] {
         partial = None,
         postAction = () => WatchUtil.printWatchMessage()
       ) { res =>
-        processOpt.map(_.destroyForcibly())
+        for (process <- processOpt)
+          ProcUtil.interruptProcess(process)
         res.orReport(logger).map(_.main).foreach {
           case s: Build.Successful =>
             val maybeProcess = maybeRun(s, allowTerminate = false)
               .orReport(logger)
-            processOpt = maybeProcess
+            if (options.watch.revolver)
+              processOpt = maybeProcess
+            else
+              maybeProcess.map(_.waitFor())
           case _: Build.Failed =>
             System.err.println("Compilation failed")
         }

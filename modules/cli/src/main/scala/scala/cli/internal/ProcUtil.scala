@@ -4,6 +4,8 @@ import java.io.InputStream
 import java.net.URL
 import java.nio.charset.StandardCharsets
 
+import scala.util.Properties
+
 object ProcUtil {
 
   def maybeUpdatePreamble(file: os.Path): Boolean = {
@@ -41,6 +43,17 @@ object ProcUtil {
       finally if (inputStream != null)
           inputStream.close()
     new String(data, StandardCharsets.UTF_8)
+  }
+
+  def interruptProcess(process: Process): Unit = {
+    def interrupt(pid: Long) =
+      if (Properties.isWin)
+        os.proc("taskkill", "/PID", pid).call()
+      else
+        os.proc("kill", "-2", pid).call()
+
+    val pid = process.pid()
+    interrupt(pid)
   }
 
 }
