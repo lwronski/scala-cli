@@ -50,6 +50,7 @@ object Deps {
     def coursier = "2.1.0-M5"
 
     def scalaJs       = "1.9.0"
+    def scalaJsEnvJsdomNodejs       = "1.1.0"
     def scalaMeta     = "4.5.0"
     def scalaNative   = "0.4.4"
     def scalaPackager = "0.1.26"
@@ -86,6 +87,7 @@ object Deps {
   def scalaJsEnvNodeJs         = ivy"org.scala-js::scalajs-env-nodejs:1.3.0"
   def scalaJsLinker            = ivy"org.scala-js::scalajs-linker:${Versions.scalaJs}"
   def scalaJsLinkerInterface   = ivy"org.scala-js::scalajs-linker-interface:${Versions.scalaJs}"
+  def scalaJsEnvJsdomNodejs    = ivy"org.scala-js::scalajs-env-jsdom-nodejs:${Versions.scalaJsEnvJsdomNodejs}"
   def scalaJsTestAdapter       = ivy"org.scala-js::scalajs-sbt-test-adapter:${Versions.scalaJs}"
   def scalametaTrees           = ivy"org.scalameta::trees:${Versions.scalaMeta}"
   def scalaPackager            = ivy"org.virtuslab::scala-packager:${Versions.scalaPackager}"

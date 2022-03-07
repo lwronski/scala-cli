@@ -208,6 +208,7 @@ class Build(val crossScalaVersion: String)
     Deps.scalaJsEnvNodeJs,
     Deps.scalaJsLinkerInterface,
     Deps.scalaJsTestAdapter,
+    Deps.scalaJsEnvJsdomNodejs,
     Deps.scalametaTrees,
     Deps.scalaparse,
     Deps.shapeless,
@@ -248,6 +249,7 @@ class Build(val crossScalaVersion: String)
          |  def detailedVersion: Option[String] = $detailedVersionValue
          |
          |  def scalaJsVersion = "${Deps.scalaJsLinker.dep.version}"
+         |  def scalajsEnvJsdomNodejsVersion = "${Deps.scalaJsEnvJsdomNodejs.dep.version}"
          |  def scalaNativeVersion = "${Deps.nativeTools.dep.version}"
          |
          |  def stubsOrganization = "${stubs.pomSettings().organization}"

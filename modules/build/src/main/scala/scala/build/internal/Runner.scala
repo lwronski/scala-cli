@@ -1,11 +1,12 @@
 package scala.build.internal
 
 import coursier.jvm.Execve
+import org.scalajs.jsenv.{ExternalJSRun, Input, RunConfig}
+import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import sbt.testing.{Framework, Status}
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
-
 import scala.build.EitherCps.{either, value}
 import scala.build.Logger
 import scala.build.errors.{
@@ -130,6 +131,12 @@ object Runner {
         command.iterator.map(_ + System.lineSeparator()).mkString
     )
 
+    val envJs = new JSDOMNodeJSEnv(
+      JSDOMNodeJSEnv.Config()
+        .withExecutable(command.head)
+        .withArgs(command.tail.toList)
+    )
+
     if (allowExecve && Execve.available()) {
       debug("execve available")
       Execve.execve(
@@ -140,9 +147,15 @@ object Runner {
       sys.error("should not happen")
     }
     else {
-      val process = new ProcessBuilder(command: _*)
-        .inheritIO()
-        .start()
+      val inputs = Seq(Input.Script(entrypoint.toPath))
+
+      val config  = RunConfig().withLogger(logger.scalaJsLogger)
+      val startJs = envJs.start(inputs, config)
+
+      val processField =
+        startJs.getClass.getDeclaredField("org$scalajs$jsenv$ExternalJSRun$$process")
+      processField.setAccessible(true)
+      val process = processField.get(startJs).asInstanceOf[Process]
       process
     }
   }

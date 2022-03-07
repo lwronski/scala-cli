@@ -32,11 +32,24 @@ final case class ScalaJsOptions(
 ) {
   def platformSuffix: String =
     "sjs" + ScalaVersion.jsBinary(finalVersion).getOrElse(finalVersion)
-  def jsDependencies(scalaVersion: String): Seq[AnyDependency] =
+  def jsDomDependencies(scalaVersion: String): Seq[AnyDependency] =
+    if (scalaVersion.startsWith("2."))
+      Seq(
+        dep"org.scala-js::scalajs-dom_sjs1:2.1.0",
+        dep"org.scala-js::scalajs-env-jsdom-nodejs:1.1.0"
+      )
+    else
+      Seq(
+        dep"org.scala-js:scalajs-dom_sjs1_2.13:2.1.0",
+        dep"org.scala-js:scalajs-env-jsdom-nodejs_2.13:1.1.0"
+      )
+  def jsDependencies(scalaVersion: String): Seq[AnyDependency] = {
     if (scalaVersion.startsWith("2."))
       Seq(dep"org.scala-js::scalajs-library:$finalVersion")
     else
       Seq(dep"org.scala-js:scalajs-library_2.13:$finalVersion")
+  } ++ jsDomDependencies(scalaVersion)
+
   def compilerPlugins(scalaVersion: String): Seq[AnyDependency] =
     if (scalaVersion.startsWith("2."))
       Seq(dep"org.scala-js:::scalajs-compiler:$finalVersion")
