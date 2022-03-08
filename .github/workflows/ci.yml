@@ -30,11 +30,19 @@ jobs:
       run: .github/scripts/gpg-setup.sh
       env:
         PGP_SECRET: ${{ secrets.PGP_SECRET }}
-    - name: Update stable branch
-      uses: devmasx/merge-branch@8b86512c768bec19827894f0a39a776809668189
-      with:
-        type: now
-        message: 'Back port of documentation changes to stable'
-        from_branch: main-test
-        target_branch: stable
-        github_token: ${{ github.token }}
+    - run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git checkout stable
+        git merge main-test
+        git push origin stable
+
+#
+#    - name: Update stable branch
+#      uses: devmasx/merge-branch@8b86512c768bec19827894f0a39a776809668189
+#      with:
+#        type: now
+#        message: 'Back port of documentation changes to stable'
+#        from_branch: main-test
+#        target_branch: stable
+#        github_token: ${{ github.token }}
