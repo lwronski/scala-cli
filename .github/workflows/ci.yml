@@ -35,7 +35,7 @@ jobs:
         git config user.email github-actions@github.com
         git checkout stable
         git merge main-test
-        git push stable
+        git push origin stable
 
 #
 #    - name: Update stable branch
