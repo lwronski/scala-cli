@@ -3,6 +3,8 @@ on:
   push:
     branches:
     - stable
+  pull_request:
+    types: [ labeled ]
 
 jobs:
   update-website:
