@@ -6,6 +6,7 @@ on:
 
 jobs:
   update-website:
+    if: contains(github.event.pull_request.head.ref, 'stable/')
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
