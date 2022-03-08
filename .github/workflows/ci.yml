@@ -37,3 +37,4 @@ jobs:
         message: 'Back port of documentation changes to stable'
         from_branch: main-test
         target_branch: stable
+        github_token: ${{ github.token }}
