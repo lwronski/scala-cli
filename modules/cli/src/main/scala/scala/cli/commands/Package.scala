@@ -436,7 +436,7 @@ object Package extends ScalaCommand[PackageOptions] {
         args,
         logger,
         cwd = Some(build.inputs.workspace)
-      )
+      ).waitFor()
       if (retCode == 0)
         libraryJar(build, hasActualManifest = false, contentDirOverride = Some(destDir))
       else

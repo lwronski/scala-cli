@@ -49,7 +49,6 @@ object ProcUtil {
 
   def interruptProcess(process: Process, logger: Logger): Unit = {
     val pid = process.pid()
-
     try
       if (process.isAlive) {
         logger.debug(s"Sending a SIGINT signal to process PID:$pid")
@@ -66,7 +65,6 @@ object ProcUtil {
       case NonFatal(e) =>
         logger.debug(s"Ignoring error during interrupt process: $e")
     }
-
   }
 
 }
