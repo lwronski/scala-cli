@@ -95,7 +95,7 @@ object Test extends ScalaCommand[TestOptions] {
         }
     }
 
-    if (options.watch.isWatchMode) {
+    if (options.watch.watchMode) {
       val watcher = Build.watch(
         inputs,
         initialBuildOptions,

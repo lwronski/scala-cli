@@ -12,7 +12,7 @@ final case class SharedWatchOptions(
     revolver: Boolean = false
 ) { // format: on
 
-  lazy val isWatchMode = watch || revolver
+  lazy val watchMode = watch || revolver
 }
 
 object SharedWatchOptions {

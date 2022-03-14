@@ -3,6 +3,8 @@ package scala.cli.commands
 import caseapp._
 import org.scalajs.linker.interface.StandardConfig
 
+import java.util.concurrent.CompletableFuture
+
 import scala.build.EitherCps.{either, value}
 import scala.build.errors.BuildException
 import scala.build.internal.{Constants, Runner}
@@ -46,17 +48,34 @@ object Run extends ScalaCommand[RunOptions] {
     def maybeRun(
       build: Build.Successful,
       allowTerminate: Boolean
-    ): Either[BuildException, Process] =
-      maybeRunOnce(
+    ): Either[BuildException, (Process, CompletableFuture[_])] = either {
+      val process = value(maybeRunOnce(
         inputs.workspace,
         inputs.projectName,
         build,
         programArgs,
         logger,
         allowExecve = allowTerminate,
-        exitOnError = allowTerminate,
         jvmRunner = build.options.addRunnerDependency.getOrElse(true)
-      )
+      ))
+
+      val onExitProcess = process.onExit().thenApply { p1 =>
+        val retCode = p1.exitValue()
+        if (retCode != 0)
+          if (allowTerminate)
+            sys.exit(retCode)
+          else {
+            val red      = Console.RED
+            val lightRed = "\u001b[91m"
+            val reset    = Console.RESET
+            System.err.println(
+              s"${red}Program exited with return code $lightRed$retCode$red.$reset"
+            )
+          }
+      }
+
+      (process, onExitProcess)
+    }
 
     val cross = options.compileCross.cross.getOrElse(false)
     SetupIde.runSafe(
@@ -68,8 +87,8 @@ object Run extends ScalaCommand[RunOptions] {
     if (CommandUtils.shouldCheckUpdate)
       Update.checkUpdateSafe(logger)
 
-    if (options.watch.isWatchMode) {
-      var processOpt = Option.empty[Process]
+    if (options.watch.watchMode) {
+      var processOpt = Option.empty[(Process, CompletableFuture[_])]
       val watcher = Build.watch(
         inputs,
         initialBuildOptions,
@@ -80,8 +99,10 @@ object Run extends ScalaCommand[RunOptions] {
         partial = None,
         postAction = () => WatchUtil.printWatchMessage()
       ) { res =>
-        for (process <- processOpt)
-          ProcUtil.interruptProcess(process)
+        for ((process, onExitProcess) <- processOpt) {
+          onExitProcess.cancel(true)
+          ProcUtil.interruptProcess(process, logger)
+        }
         res.orReport(logger).map(_.main).foreach {
           case s: Build.Successful =>
             val maybeProcess = maybeRun(s, allowTerminate = false)
@@ -89,7 +110,7 @@ object Run extends ScalaCommand[RunOptions] {
             if (options.watch.revolver)
               processOpt = maybeProcess
             else
-              maybeProcess.map(_.waitFor())
+              maybeProcess.map(_._1.waitFor())
           case _: Build.Failed =>
             System.err.println("Compilation failed")
         }
@@ -111,7 +132,7 @@ object Run extends ScalaCommand[RunOptions] {
           .orExit(logger)
       builds.main match {
         case s: Build.Successful =>
-          val process = maybeRun(s, allowTerminate = true)
+          val (process, _) = maybeRun(s, allowTerminate = true)
             .orExit(logger)
           process.waitFor()
         case _: Build.Failed =>
@@ -128,7 +149,6 @@ object Run extends ScalaCommand[RunOptions] {
     args: Seq[String],
     logger: Logger,
     allowExecve: Boolean,
-    exitOnError: Boolean,
     jvmRunner: Boolean
   ): Either[BuildException, Process] = either {
 
@@ -153,8 +173,7 @@ object Run extends ScalaCommand[RunOptions] {
       finalMainClass,
       finalArgs,
       logger,
-      allowExecve,
-      exitOnError
+      allowExecve
     )
     value(res)
   }
@@ -166,8 +185,7 @@ object Run extends ScalaCommand[RunOptions] {
     mainClass: String,
     args: Seq[String],
     logger: Logger,
-    allowExecve: Boolean,
-    exitOnError: Boolean
+    allowExecve: Boolean
   ): Either[BuildException, Process] = either {
 
     val process = build.options.platform.value match {
@@ -208,19 +226,6 @@ object Run extends ScalaCommand[RunOptions] {
           logger,
           allowExecve = allowExecve
         )
-    }
-
-    process.onExit().thenApply { p1 =>
-      val retCode = p1.exitValue()
-      if (retCode != 0)
-        if (exitOnError)
-          sys.exit(retCode)
-        else {
-          val red      = Console.RED
-          val lightRed = "\u001b[91m"
-          val reset    = Console.RESET
-          System.err.println(s"${red}Program exited with return code $lightRed$retCode$red.$reset")
-        }
     }
 
     process

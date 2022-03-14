@@ -49,7 +49,7 @@ object Package extends ScalaCommand[PackageOptions] {
 
     val cross = options.compileCross.cross.getOrElse(false)
 
-    if (options.watch.isWatchMode) {
+    if (options.watch.watchMode) {
       var expectedModifyEpochSecondOpt = Option.empty[Long]
       val watcher = Build.watch(
         inputs,

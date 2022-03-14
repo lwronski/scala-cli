@@ -66,7 +66,7 @@ object Compile extends ScalaCommand[CompileOptions] {
 
     val compilerMaker = options.shared.compilerMaker(threads)
 
-    if (options.watch.isWatchMode) {
+    if (options.watch.watchMode) {
       val watcher = Build.watch(
         inputs,
         buildOptions,

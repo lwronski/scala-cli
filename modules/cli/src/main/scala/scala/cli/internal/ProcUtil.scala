@@ -4,7 +4,9 @@ import java.io.InputStream
 import java.net.URL
 import java.nio.charset.StandardCharsets
 
+import scala.build.Logger
 import scala.util.Properties
+import scala.util.control.NonFatal
 
 object ProcUtil {
 
@@ -45,15 +47,26 @@ object ProcUtil {
     new String(data, StandardCharsets.UTF_8)
   }
 
-  def interruptProcess(process: Process): Unit = {
-    def interrupt(pid: Long) =
-      if (Properties.isWin)
-        os.proc("taskkill", "/PID", pid).call()
-      else
-        os.proc("kill", "-2", pid).call()
-
+  def interruptProcess(process: Process, logger: Logger): Unit = {
     val pid = process.pid()
-    interrupt(pid)
+
+    try
+      if (process.isAlive) {
+        logger.debug(s"Sending a SIGINT signal to process PID:$pid")
+        if (Properties.isWin) {
+          os.proc("taskkill", "/PID", pid).call()
+          logger.debug(s"Run following command to interrupt process: 'taskkill /PID $pid'")
+        }
+        else {
+          os.proc("kill", "-2", pid).call()
+          logger.debug(s"Run following command to interrupt process: 'kill -2 $pid'")
+        }
+      }
+    catch { // ignore the failure if the process isn't running, might mean it exited between the first check and the call of the command to kill it
+      case NonFatal(e) =>
+        logger.debug(s"Ignoring error during interrupt process: $e")
+    }
+
   }
 
 }
