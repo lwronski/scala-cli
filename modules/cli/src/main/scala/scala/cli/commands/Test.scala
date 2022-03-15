@@ -145,7 +145,7 @@ object Test extends ScalaCommand[TestOptions] {
         val linkerConfig = build.options.scalaJsOptions.linkerConfig(logger)
         value {
           Run.withLinkedJs(build, None, addTestInitializer = true, linkerConfig, logger) { js =>
-            Runner.testJs(
+            val res = Runner.testJs(
               build.fullClassPath,
               js.toIO,
               requireTests,
@@ -153,6 +153,9 @@ object Test extends ScalaCommand[TestOptions] {
               testFrameworkOpt,
               logger
             )
+            // clean after linking js TODO it should be move to Run.withLinkedJs
+            if (os.exists(js)) os.remove(js)
+            res
           }.flatMap(e => e)
         }
       case Platform.Native =>

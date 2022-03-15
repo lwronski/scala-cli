@@ -194,12 +194,14 @@ object Run extends ScalaCommand[RunOptions] {
         val res =
           withLinkedJs(build, Some(mainClass), addTestInitializer = false, linkerConfig, logger) {
             js =>
-              Runner.runJs(
+              val process = Runner.runJs(
                 js.toIO,
                 args,
                 logger,
                 allowExecve = allowExecve
               )
+              process.onExit().thenApply(_ => if (os.exists(js)) os.remove(js))
+              process
           }
         value(res)
       case Platform.Native =>
@@ -239,10 +241,9 @@ object Run extends ScalaCommand[RunOptions] {
     logger: Logger
   )(f: os.Path => T): Either[BuildException, T] = {
     val dest = os.temp(prefix = "main", suffix = ".js")
-    try Package.linkJs(build, dest, mainClassOpt, addTestInitializer, config, logger).map { _ =>
-        f(dest)
-      }
-    finally if (os.exists(dest)) os.remove(dest)
+    Package.linkJs(build, dest, mainClassOpt, addTestInitializer, config, logger).map { _ =>
+      f(dest)
+    }
   }
 
   def withNativeLauncher[T](
