@@ -13,6 +13,9 @@ import scala.cli.commands.util.CommonOps._
 import scala.cli.commands.util.SharedOptionsUtil._
 import scala.util.Properties
 
+import java.io.BufferedWriter
+import java.io.OutputStreamWriter
+
 object Repl extends ScalaCommand[ReplOptions] {
   override def group = "Main"
   override def names = List(
@@ -213,8 +216,8 @@ object Repl extends ScalaCommand[ReplOptions] {
 
     if (dryRun)
       logger.message("Dry run, not running REPL.")
-    else
-      Runner.runJvm(
+    else {
+      val process: Process = Runner.runJvm(
         options.javaHome().value.javaCommand,
         replArtifacts.replJavaOpts ++ options.javaOptions.javaOpts.toSeq.map(_.value.value),
         classDir.map(_.toIO).toSeq ++ replArtifacts.replClassPath.map(_.toIO),
@@ -229,5 +232,14 @@ object Repl extends ScalaCommand[ReplOptions] {
         logger,
         allowExecve = allowExit
       )
+      val stdin = process.getOutputStream
+      val writer = new BufferedWriter(new OutputStreamWriter(stdin))
+
+      writer.write("""val d = 5""")
+      writer.newLine()
+      writer.flush()
+
+      process.waitFor()
+    }
   }
 }
