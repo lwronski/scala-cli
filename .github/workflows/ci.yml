@@ -32,22 +32,22 @@ jobs:
           ssh-private-key: |
             ${{ secrets.SCALA_CLI_PACKAGES_KEY }}
             ${{ secrets.HOMEBREW_SCALA_CLI_KEY }}
-      - run: ./mill -i ci.updateInstallationScript
-      - run: ./mill -i ci.updateBrewFormula
+#      - run: ./mill -i ci.updateInstallationScript
+#      - run: ./mill -i ci.updateBrewFormula
       - name: GPG setup
         run: .github/scripts/gpg-setup.sh
         env:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
-      - run: ./mill -i ci.updateDebianPackages
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          GPG_EMAIL: ${{ secrets.GPG_EMAIL }}
-      - run: ./mill -i ci.updateCentOsPackages
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          KEYGRIP: ${{ secrets.KEYGRIP }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          GPG_EMAIL: ${{ secrets.GPG_EMAIL }}
+#      - run: ./mill -i ci.updateDebianPackages
+#        env:
+#          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+#          GPG_EMAIL: ${{ secrets.GPG_EMAIL }}
+#      - run: ./mill -i ci.updateCentOsPackages
+#        env:
+#          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+#          KEYGRIP: ${{ secrets.KEYGRIP }}
+#          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+#          GPG_EMAIL: ${{ secrets.GPG_EMAIL }}
       - run: ./mill -i ci.updateStandaloneLauncher
         env:
           UPLOAD_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

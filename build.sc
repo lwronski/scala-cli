@@ -1001,7 +1001,7 @@ object ci extends Module {
       )
     os.write.over(standaloneWindowsLauncherPath, updatedWindowsLauncherScript)
 
-    os.proc("git", "switch", "-c", branch).call(cwd = scalaCliDir)
+    os.proc("git", "switch", "-c", targetBranch).call(cwd = scalaCliDir)
     commitChanges(s"Update scala-cli.sh launcher for $version", targetBranch, scalaCliDir)
     os.proc("gh", "auth", "login", "--with-token").call(cwd = scalaCliDir, stdin = ghToken())
     os.proc("gh", "pr", "create", "--fill", "--base", "main", "--head", targetBranch)
