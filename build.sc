@@ -953,7 +953,6 @@ private def commitChanges(name: String, branch: String, repoDir: os.Path): Unit 
   if (os.proc("git", "status").call(cwd = repoDir).out.text().trim.contains("nothing to commit"))
     println("Nothing Changes")
   else {
-    os.proc("git", "switch", "-c", branch).call(cwd = repoDir)
     os.proc("git", "add", "-A").call(cwd = repoDir)
     os.proc("git", "commit", "-am", name).call(cwd = repoDir)
     println(s"Trying to push on $branch branch")
@@ -1002,6 +1001,7 @@ object ci extends Module {
       )
     os.write.over(standaloneWindowsLauncherPath, updatedWindowsLauncherScript)
 
+    os.proc("git", "switch", "-c", branch).call(cwd = scalaCliDir)
     commitChanges(s"Update scala-cli.sh launcher for $version", targetBranch, scalaCliDir)
     os.proc("gh", "auth", "login", "--with-token").call(cwd = scalaCliDir, stdin = ghToken())
     os.proc("gh", "pr", "create", "--fill", "--base", "main", "--head", targetBranch)
@@ -1025,7 +1025,12 @@ object ci extends Module {
     gitClone(repo, branch, targetDir)
     setupGithubRepo(homebrewFormulaDir)
 
-    val launcherPath = os.Path("artifacts", os.pwd) / "scala-cli-x86_64-apple-darwin.gz"
+    os.proc(
+      "wget",
+      "https://github.com/VirtusLab/scala-cli/releases/download/v0.1.3/scala-cli-x86_64-apple-darwin.gz"
+    ).call(cwd = os.pwd)
+
+    val launcherPath = os.pwd / "scala-cli-x86_64-apple-darwin.gz"
     val launcherURL =
       s"https://github.com/Virtuslab/scala-cli/releases/download/v$version/scala-cli-x86_64-apple-darwin.gz"
 
@@ -1101,8 +1106,12 @@ object ci extends Module {
     setupGithubRepo(packagesDir)
 
     // copy deb package to repository
+    os.proc(
+      "wget",
+      "https://github.com/VirtusLab/scala-cli/releases/download/v0.1.3/scala-cli-x86_64-pc-linux.deb"
+    ).call(cwd = os.pwd)
     os.copy(
-      os.Path("artifacts", os.pwd) / "scala-cli-x86_64-pc-linux.deb",
+      os.pwd / "scala-cli-x86_64-pc-linux.deb",
       debianDir / s"scala-cli_$version.deb"
     )
 
@@ -1169,8 +1178,12 @@ object ci extends Module {
     setupGithubRepo(packagesDir)
 
     // copy rpm package to repository
+    os.proc(
+      "wget",
+      "https://github.com/VirtusLab/scala-cli/releases/download/v0.1.3/scala-cli-x86_64-pc-linux.rpm"
+    ).call(cwd = os.pwd)
     os.copy(
-      os.Path("artifacts", os.pwd) / "scala-cli-x86_64-pc-linux.rpm",
+      os.pwd / "scala-cli-x86_64-pc-linux.rpm",
       centOsDir / "Packages" / s"scala-cli_$version.rpm"
     )
 

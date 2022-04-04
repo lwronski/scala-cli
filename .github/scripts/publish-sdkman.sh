@@ -9,12 +9,7 @@
 
 set -eu
 
-version() {
-  "./mill" -i writePackageVersionTo scala-cli-version 1>&2
-  cat scala-cli-version
-}
-
-SCALA_CLI_VERSION="$(version)"
+SCALA_CLI_VERSION="0.1.3"
 UNAMES=("pc-linux-static-sdk" "apple-darwin-sdk" "pc-win32-sdk")
 PLATFORMS=("LINUX_64" "MAC_OSX" "WINDOWS_64")
 

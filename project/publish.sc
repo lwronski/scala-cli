@@ -78,8 +78,7 @@ trait ScalaCliPublishModule extends PublishModule with PublishLocalNoFluff {
       Developer("alexarchambault", "Alex Archambault", "https://github.com/alexarchambault")
     )
   )
-  def publishVersion =
-    finalPublishVersion()
+  def publishVersion = "0.1.3"
   override def sourceJar = T {
     import mill.modules.Jvm.createJar
     val allSources0 = allSources().map(_.path).filter(os.exists).toSet
