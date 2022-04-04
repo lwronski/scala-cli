@@ -48,9 +48,12 @@ jobs:
 #          KEYGRIP: ${{ secrets.KEYGRIP }}
 #          PGP_SECRET: ${{ secrets.PGP_SECRET }}
 #          GPG_EMAIL: ${{ secrets.GPG_EMAIL }}
-      - run: ./mill -i ci.updateStandaloneLauncher
-        env:
-          UPLOAD_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - run: ./mill -i ci.updateStandaloneLauncher
+#        env:
+#          UPLOAD_GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish to SDKMAN
         run: .github/scripts/publish-sdkman.sh
         shell: bash
+        env:
+          SDKMAN_KEY: ${{ secrets.SDKMAN_KEY }}
+          $SDKMAN_TOKEN: ${{ secrets.$SDKMAN_TOKEN }}
