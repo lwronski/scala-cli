@@ -35,6 +35,7 @@ class ScalaCliCommands(
     Clean,
     Compile,
     DefaultFile,
+    DependencyUpdate,
     Directories,
     Doc,
     Doctor,

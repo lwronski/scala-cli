@@ -11,7 +11,7 @@ final class BloopCompiler(
   def jvmVersion: Option[Positioned[Int]] =
     Some(
       Positioned(
-        List(Position.Bloop(bloopServer.bloopInfo.javaHome)),
+        Position.Bloop(bloopServer.bloopInfo.javaHome),
         bloopServer.bloopInfo.jvmVersion
       )
     )
