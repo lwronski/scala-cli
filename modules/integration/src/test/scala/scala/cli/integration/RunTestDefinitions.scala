@@ -695,9 +695,31 @@ abstract class RunTestDefinitions(val scalaVersionOpt: Option[String])
     }
   }
 
+  def pipingScalaCodeAndThenScalaScript(): Unit = {
+    emptyInputs.fromRoot { root =>
+      // regressions test https://github.com/VirtusLab/scala-cli/issues/1054
+      val cliCmd = (TestUtil.cli ++ extraOptions).mkString(" ")
+
+      // should throw error when piping Scala code
+      val cmdWithError = s""" echo 'println("Hello" + " from pipe")' | $cliCmd _ """
+      val resWithError = os.proc("bash", "-c", cmdWithError).call(cwd = root, check = false)
+      expect(resWithError.exitCode != 0)
+
+      // should run successfully when piping Scala script
+      val cmd            = s""" echo 'println("Hello" + " from pipe")' | $cliCmd _.sc """
+      val res            = os.proc("bash", "-c", cmd).call(cwd = root, mergeErrIntoOut = true)
+      val expectedOutput = "Hello from pipe"
+      expect(res.out.text().trim.contains(expectedOutput))
+      expect(res.out.text().trim.split(System.lineSeparator()).length == 3)
+    }
+  }
+
   if (!Properties.isWin) {
     test("piping") {
       piping()
+    }
+    test("pipe scala code and then scala script") {
+      pipingScalaCodeAndThenScalaScript()
     }
     test("Scripts accepted as piped input") {
       val message = "Hello"
