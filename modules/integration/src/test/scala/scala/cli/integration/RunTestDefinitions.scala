@@ -711,6 +711,18 @@ abstract class RunTestDefinitions(val scalaVersionOpt: Option[String])
       val expectedOutput = "Hello from pipe"
       expect(res.out.text().trim.contains(expectedOutput))
       expect(res.out.text().trim.split(System.lineSeparator()).length == 3)
+
+      // should throw error when piping Scala code
+      val cmdWithError2 = s""" echo 'println("Hello" + " from pipe")' | $cliCmd _ """
+      val resWithError2 = os.proc("bash", "-c", cmdWithError2).call(cwd = root, check = false)
+      expect(resWithError2.exitCode != 0)
+
+      // should run successfully when piping Scala script
+      val cmd2            = s""" echo 'println("Hello" + " from pipe")' | $cliCmd _.sc """
+      val res2            = os.proc("bash", "-c", cmd2).call(cwd = root, mergeErrIntoOut = true)
+      val expectedOutput2 = "Hello from pipe"
+      expect(res2.out.text().trim.contains(expectedOutput2))
+      expect(res2.out.text().trim.split(System.lineSeparator()).length == 3)
     }
   }
 
