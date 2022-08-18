@@ -16,7 +16,7 @@ import scala.util.Properties
 
 object ScalaCli {
 
-  val progName = (new Argv0).get("scala-cli")
+  val progName = (new Argv0).get("scala-cli").stripSuffix(".exe")
 
   private def checkName(name: String) =
     progName == name ||
