@@ -2,6 +2,7 @@ import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`io.get-coursier::coursier-launcher:2.1.0-M7-34-gf519b50a3`
 import $ivy.`io.github.alexarchambault.mill::mill-native-image-upload:0.1.19`
 import $file.project.deps, deps.{Deps, Docker, InternalDeps, Scala, TestDeps}
+import $file.project.upload, upload.{Upload1}
 import $file.project.publish, publish.{ghOrg, ghName, ScalaCliPublishModule, organization}
 import $file.project.settings, settings.{
   CliLaunchers,
@@ -1268,13 +1269,13 @@ def uploadLaunchers(directory: String = "artifacts") = T.command {
 
   val path = os.Path(directory, os.pwd)
   val launchers = os.list(path).filter(os.isFile(_)).map { path =>
-    path.toNIO -> path.last
+    path -> path.last
   }
   val (tag, overwriteAssets) =
     if (version.endsWith("-SNAPSHOT")) ("nightly", true)
     else ("v" + version, false)
   System.err.println(s"Uploading to tag $tag (overwrite assets: $overwriteAssets)")
-  Upload.upload(ghOrg, ghName, ghToken(), tag, dryRun = false, overwrite = overwriteAssets)(
+  Upload1.upload(ghOrg, ghName, ghToken(), tag, dryRun = false, overwrite = overwriteAssets)(
     launchers: _*
   )
 }
