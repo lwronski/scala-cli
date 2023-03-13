@@ -1,5 +1,6 @@
 package scala.cli.commands.shared
 
+import scala.build.internal.util.WarningMessages
 import scala.cli.ScalaCli
 import scala.cli.commands.SpecificationLevel
 

@@ -6,6 +6,7 @@ case class StrictDirective(
   key: String,
   values: Seq[Value[_]]
 ) {
+  override def toString: String = s"//> $key \"${values.mkString("\",  \"")}\""
   def numericalOrStringValuesCount: Int =
     values.count {
       case _: NumericValue => true
