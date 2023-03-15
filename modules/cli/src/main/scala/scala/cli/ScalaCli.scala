@@ -6,10 +6,10 @@ import java.io.{ByteArrayOutputStream, File, PrintStream}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.util.Locale
-
 import scala.build.Directories
 import scala.build.blooprifle.FailedToStartServerException
 import scala.build.internal.Constants
+import scala.cli.commands.shared.GlobalSuppressWarningOptions
 import scala.cli.config.{ConfigDb, Keys}
 import scala.cli.internal.Argv0
 import scala.cli.launcher.{LauncherCli, LauncherOptions}
@@ -198,7 +198,13 @@ object ScalaCli {
       // Enable ANSI output in Windows terminal
       coursier.jniutils.WindowsAnsiTerminal.enableAnsiOutput()
 
-    new ScalaCliCommands(progName, baseRunnerName, fullRunnerName, isSipScala)
-      .main(scalaCliArgs)
+    val (suppressGlobal, remainingArgs0) = GlobalSuppressWarningOptions.parser.ignoreUnrecognized.parse(scalaCliArgs.toVector) match {
+      case Left(e) =>
+        (GlobalSuppressWarningOptions(), scalaCliArgs)
+      case Right((globalOpts, args0)) =>
+        (globalOpts, args0.toArray)
+    }
+    new ScalaCliCommands(progName, baseRunnerName, fullRunnerName, isSipScala, suppressGlobal)
+      .main(remainingArgs0)
   }
 }

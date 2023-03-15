@@ -4,15 +4,15 @@ import caseapp.core.app.CommandsEntryPoint
 import caseapp.core.help.{Help, HelpFormat, RuntimeCommandsHelp}
 
 import java.nio.file.InvalidPathException
-
 import scala.cli.commands.*
-import scala.cli.commands.shared.ScalaCliHelp
+import scala.cli.commands.shared.{GlobalSuppressWarningOptions, ScalaCliHelp}
 
 class ScalaCliCommands(
   val progName: String,
   baseRunnerName: String,
   fullRunnerName: String,
-  isSipScala: Boolean
+  isSipScala: Boolean,
+  suppressGlobal: GlobalSuppressWarningOptions = GlobalSuppressWarningOptions()
 ) extends CommandsEntryPoint {
 
   lazy val actualDefaultCommand = new default.Default(help, isSipScala)
@@ -22,10 +22,10 @@ class ScalaCliCommands(
     java.lang.Boolean.getBoolean("scala-cli.pgp.binary-commands")
   private def pgpCommands       = new pgp.PgpCommands
   private def pgpBinaryCommands = new pgp.PgpCommandsSubst
-
+  implicit val suppress: GlobalSuppressWarningOptions = suppressGlobal
   private def allCommands = Seq[ScalaCommand[_]](
     addpath.AddPath,
-    bloop.Bloop,
+    bloop.Bloop(),
     bloop.BloopExit,
     bloop.BloopOutput,
     bloop.BloopStart,

@@ -9,11 +9,11 @@ import scala.build.internal.OsLibc
 import scala.build.{Directories, Logger}
 import scala.cli.CurrentParams
 import scala.cli.commands.ScalaCommand
-import scala.cli.commands.shared.{LoggingOptions, SharedOptions}
+import scala.cli.commands.shared.{GlobalSuppressWarningOptions, LoggingOptions, SharedOptions}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-object Bloop extends ScalaCommand[BloopOptions] {
+case class Bloop()(implicit val suppress: GlobalSuppressWarningOptions) extends ScalaCommand[BloopOptions](suppress) {
   override def hidden                  = true
 
   override def scalaSpecificationLevel = SpecificationLevel.RESTRICTED
@@ -58,6 +58,7 @@ object Bloop extends ScalaCommand[BloopOptions] {
   }
 
   override def runCommand(options: BloopOptions, args: RemainingArgs, logger: Logger): Unit = {
+    System.err.println(suppress)
     val threads          = BloopThreads.create()
     val bloopRifleConfig = bloopRifleConfig0(options)
 

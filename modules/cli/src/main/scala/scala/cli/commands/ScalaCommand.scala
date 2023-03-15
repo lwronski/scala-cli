@@ -36,7 +36,7 @@ import scala.cli.internal.ProcUtil
 import scala.cli.{CurrentParams, ScalaCli}
 import scala.util.{Properties, Try}
 
-abstract class ScalaCommand[T <: HasGlobalOptions](implicit myParser: Parser[T], help: Help[T])
+abstract class ScalaCommand[T <: HasGlobalOptions](suppress: GlobalSuppressWarningOptions = GlobalSuppressWarningOptions())(implicit myParser: Parser[T], help: Help[T])
     extends Command()(myParser, help)
     with NeedsArgvCommand with CommandHelpers with RestrictableCommand[T] {
 
@@ -316,16 +316,8 @@ abstract class ScalaCommand[T <: HasGlobalOptions](implicit myParser: Parser[T],
       sharedOptions(options).foreach(_.logger.debug("build options could not be initialized"))
       sys.exit(1)
     }
-
-  private val shouldSuppressExperimentalFeatureWarningsAtomic: AtomicBoolean =
-    new AtomicBoolean(false)
   override def shouldSuppressExperimentalFeatureWarnings: Boolean =
-    shouldSuppressExperimentalFeatureWarningsAtomic.get()
-  final override def main(progName: String, args: Array[String]): Unit = {
-    shouldSuppressExperimentalFeatureWarningsAtomic
-      .set(GlobalSuppressWarningOptions.shouldSuppressExperimentalFeatureWarning(args.toList))
-    super.main(progName, args)
-  }
+    suppress.suppressExperimentalFeatureWarning
 
   /** This should be overridden instead of [[run]] when extending [[ScalaCommand]].
     *
