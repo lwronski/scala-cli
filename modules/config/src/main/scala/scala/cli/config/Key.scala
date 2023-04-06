@@ -58,13 +58,16 @@ abstract class Key[T] {
 }
 
 object Key {
+  private lazy val stringJsonCodec: JsonValueCodec[String]           = JsonCodecMaker.make
+  private lazy val stringListJsonCodec: JsonValueCodec[List[String]] = JsonCodecMaker.make
+  private lazy val booleanJsonCodec: JsonValueCodec[Boolean]         = JsonCodecMaker.make
 
   abstract class EntryError(
     message: String,
     causeOpt: Option[Throwable] = None
   ) extends Exception(message, causeOpt.orNull)
 
-  final class JsonReaderError(cause: JsonReaderException)
+  private final class JsonReaderError(cause: JsonReaderException)
       extends EntryError("Error parsing config JSON", Some(cause))
 
   final class MalformedValue(
@@ -83,7 +86,7 @@ object Key {
         cause
       )
 
-  final class MalformedEntry(
+  private final class MalformedEntry(
     entry: Key[_],
     messages: ::[String]
   ) extends EntryError(
@@ -91,8 +94,18 @@ object Key {
           messages.mkString(", ")
       )
 
-  private val stringCodec: JsonValueCodec[String]   = JsonCodecMaker.make
-  private val booleanCodec: JsonValueCodec[Boolean] = JsonCodecMaker.make
+  abstract class KeyWithJsonCodec[T] extends Key[T] {
+    def jsonCodec: JsonValueCodec[T]
+
+    def parse(json: Array[Byte]): Either[Key.EntryError, T] =
+      try Right(readFromArray(json)(jsonCodec))
+      catch {
+        case e: JsonReaderException =>
+          Left(new Key.JsonReaderError(e))
+      }
+
+    def write(value: T): Array[Byte] = writeToArray(value)(jsonCodec)
+  }
 
   final class StringEntry(
     val prefix: Seq[String],
@@ -100,15 +113,8 @@ object Key {
     override val specificationLevel: SpecificationLevel,
     val description: String = "",
     override val hidden: Boolean = false
-  ) extends Key[String] {
-    def parse(json: Array[Byte]): Either[EntryError, String] =
-      try Right(readFromArray(json)(stringCodec))
-      catch {
-        case e: JsonReaderException =>
-          Left(new JsonReaderError(e))
-      }
-    def write(value: String): Array[Byte] =
-      writeToArray(value)(stringCodec)
+  ) extends KeyWithJsonCodec[String] {
+    def jsonCodec: JsonValueCodec[String] = stringJsonCodec
     def asString(value: String): Seq[String] =
       Seq(value)
     def fromString(values: Seq[String]): Either[MalformedValue, String] =
@@ -124,17 +130,10 @@ object Key {
     override val specificationLevel: SpecificationLevel,
     val description: String = "",
     override val hidden: Boolean = false
-  ) extends Key[Boolean] {
-    def parse(json: Array[Byte]): Either[EntryError, Boolean] =
-      try Right(readFromArray(json)(booleanCodec))
-      catch {
-        case e: JsonReaderException =>
-          Left(new JsonReaderError(e))
-      }
-    def write(value: Boolean): Array[Byte] =
-      writeToArray(value)(booleanCodec)
+  ) extends KeyWithJsonCodec[Boolean] {
+    def jsonCodec: JsonValueCodec[Boolean] = booleanJsonCodec
     def asString(value: Boolean): Seq[String] =
-      Seq(value.toString())
+      Seq(value.toString)
     def fromString(values: Seq[String]): Either[MalformedValue, Boolean] =
       values match {
         case Seq(value) if value.toBooleanOption.isDefined => Right(value.toBoolean)
@@ -156,7 +155,7 @@ object Key {
   ) extends Key[PasswordOption] {
     def parse(json: Array[Byte]): Either[EntryError, PasswordOption] =
       try {
-        val str = readFromArray(json)(stringCodec)
+        val str = readFromArray(json)(stringJsonCodec)
         PasswordOption.parse(str).left.map { e =>
           new MalformedValue(this, Seq(str), Right(e))
         }
@@ -166,7 +165,7 @@ object Key {
           Left(new JsonReaderError(e))
       }
     def write(value: PasswordOption): Array[Byte] =
-      writeToArray(value.asString.value)(stringCodec)
+      writeToArray(value.asString.value)(stringJsonCodec)
     def asString(value: PasswordOption): Seq[String] = Seq(value.asString.value)
     def fromString(values: Seq[String]): Either[MalformedValue, PasswordOption] =
       values match {
@@ -184,26 +183,92 @@ object Key {
     override def isPasswordOption: Boolean = true
   }
 
-  private val stringListCodec: JsonValueCodec[List[String]] = JsonCodecMaker.make
-
   final class StringListEntry(
     val prefix: Seq[String],
     val name: String,
     override val specificationLevel: SpecificationLevel,
     val description: String = "",
     override val hidden: Boolean = false
-  ) extends Key[List[String]] {
-    def parse(json: Array[Byte]): Either[EntryError, List[String]] =
-      try Right(readFromArray(json)(stringListCodec))
-      catch {
-        case e: JsonReaderException =>
-          Left(new JsonReaderError(e))
-      }
-    def write(value: List[String]): Array[Byte] =
-      writeToArray(value)(stringListCodec)
+  ) extends KeyWithJsonCodec[List[String]] {
+    def jsonCodec: JsonValueCodec[List[String]]    = stringListJsonCodec
     def asString(value: List[String]): Seq[String] = value
     def fromString(values: Seq[String]): Either[MalformedValue, List[String]] =
       Right(values.toList)
   }
+  abstract class CredentialsEntry[T <: CredentialsValue, U <: CredentialsAsJson[T]]
+      extends Key[List[T]] {
+    protected def asJson(credentials: T): U
+    protected def jsonCodec: JsonValueCodec[List[U]]
+    def parse(json: Array[Byte]): Either[Key.EntryError, List[T]] =
+      try {
+        val list   = readFromArray(json)(jsonCodec).map(_.credentials)
+        val errors = list.collect { case Left(errors) => errors }.flatten
+        errors match {
+          case Nil =>
+            Right(list.collect { case Right(v) => v })
+          case h :: t =>
+            Left(new Key.MalformedEntry(this, ::(h, t)))
+        }
+      }
+      catch {
+        case e: JsonReaderException =>
+          Left(new Key.JsonReaderError(e))
+      }
+    def write(value: List[T]): Array[Byte] = writeToArray(value.map(asJson))(jsonCodec)
+    def fromString(values: Seq[String]): Either[MalformedValue, List[T]] =
+      Left(new Key.MalformedValue(this, values, Right(ErrorMessages.inlineCredentialsError)))
+    def asString(value: List[T]): Seq[String] = value.map(_.asString)
+  }
 
+  final class RepositoryCredentialsEntry(
+    val prefix: Seq[String],
+    val name: String,
+    override val specificationLevel: SpecificationLevel,
+    val description: String = "",
+    override val hidden: Boolean = false
+  ) extends CredentialsEntry[RepositoryCredentials, RepositoryCredentialsAsJson] {
+    def asJson(credentials: RepositoryCredentials): RepositoryCredentialsAsJson =
+      RepositoryCredentialsAsJson(
+        credentials.host,
+        credentials.user.map(_.asString.value),
+        credentials.password.map(_.asString.value),
+        credentials.realm,
+        credentials.optional,
+        credentials.matchHost,
+        credentials.httpsOnly,
+        credentials.passOnRedirect
+      )
+
+    def jsonCodec: JsonValueCodec[List[RepositoryCredentialsAsJson]] =
+      RepositoryCredentialsAsJson.listJsonCodec
+
+    override def asString(value: List[RepositoryCredentials]): Seq[String] =
+      value
+        .zipWithIndex
+        .map {
+          case (cred, idx) =>
+            val prefix = s"configRepo$idx."
+            cred.asString.linesWithSeparators.map(prefix + _).mkString
+        }
+  }
+
+  class PublishCredentialsEntry(
+    val prefix: Seq[String],
+    val name: String,
+    override val specificationLevel: SpecificationLevel,
+    val description: String = "",
+    override val hidden: Boolean = false
+  ) extends CredentialsEntry[PublishCredentials, PublishCredentialsAsJson] {
+    def asJson(credentials: PublishCredentials): PublishCredentialsAsJson =
+      PublishCredentialsAsJson(
+        credentials.host,
+        credentials.user.map(_.asString.value),
+        credentials.password.map(_.asString.value),
+        credentials.realm,
+        credentials.httpsOnly
+      )
+
+    val jsonCodec: JsonValueCodec[List[PublishCredentialsAsJson]] =
+      PublishCredentialsAsJson.listJsonCodec
+  }
 }
