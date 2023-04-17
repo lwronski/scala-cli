@@ -58,9 +58,9 @@ abstract class Key[T] {
 }
 
 object Key {
-  private lazy val stringJsonCodec: JsonValueCodec[String]           = JsonCodecMaker.make
-  private lazy val stringListJsonCodec: JsonValueCodec[List[String]] = JsonCodecMaker.make
-  private lazy val booleanJsonCodec: JsonValueCodec[Boolean]         = JsonCodecMaker.make
+  private implicit lazy val stringJsonCodec: JsonValueCodec[String]           = JsonCodecMaker.make
+  private implicit lazy val stringListJsonCodec: JsonValueCodec[List[String]] = JsonCodecMaker.make
+  private implicit lazy val booleanJsonCodec: JsonValueCodec[Boolean]         = JsonCodecMaker.make
 
   abstract class EntryError(
     message: String,
@@ -94,17 +94,15 @@ object Key {
           messages.mkString(", ")
       )
 
-  abstract class KeyWithJsonCodec[T] extends Key[T] {
-    def jsonCodec: JsonValueCodec[T]
-
+  abstract class KeyWithJsonCodec[T: JsonValueCodec] extends Key[T] {
     def parse(json: Array[Byte]): Either[Key.EntryError, T] =
-      try Right(readFromArray(json)(jsonCodec))
+      try Right(readFromArray(json))
       catch {
         case e: JsonReaderException =>
           Left(new Key.JsonReaderError(e))
       }
 
-    def write(value: T): Array[Byte] = writeToArray(value)(jsonCodec)
+    def write(value: T): Array[Byte] = writeToArray(value)
   }
 
   final class StringEntry(
@@ -114,7 +112,6 @@ object Key {
     val description: String = "",
     override val hidden: Boolean = false
   ) extends KeyWithJsonCodec[String] {
-    def jsonCodec: JsonValueCodec[String] = stringJsonCodec
     def asString(value: String): Seq[String] =
       Seq(value)
     def fromString(values: Seq[String]): Either[MalformedValue, String] =
@@ -131,7 +128,6 @@ object Key {
     val description: String = "",
     override val hidden: Boolean = false
   ) extends KeyWithJsonCodec[Boolean] {
-    def jsonCodec: JsonValueCodec[Boolean] = booleanJsonCodec
     def asString(value: Boolean): Seq[String] =
       Seq(value.toString)
     def fromString(values: Seq[String]): Either[MalformedValue, Boolean] =
@@ -190,18 +186,16 @@ object Key {
     val description: String = "",
     override val hidden: Boolean = false
   ) extends KeyWithJsonCodec[List[String]] {
-    def jsonCodec: JsonValueCodec[List[String]]    = stringListJsonCodec
     def asString(value: List[String]): Seq[String] = value
     def fromString(values: Seq[String]): Either[MalformedValue, List[String]] =
       Right(values.toList)
   }
-  abstract class CredentialsEntry[T <: CredentialsValue, U <: CredentialsAsJson[T]]
+  abstract class CredentialsEntry[T <: CredentialsValue, U <: CredentialsAsJson[T]](using codec: JsonValueCodec[List[U]])
       extends Key[List[T]] {
     protected def asJson(credentials: T): U
-    protected def jsonCodec: JsonValueCodec[List[U]]
     def parse(json: Array[Byte]): Either[Key.EntryError, List[T]] =
       try {
-        val list   = readFromArray(json)(jsonCodec).map(_.credentials)
+        val list   = readFromArray(json).map(_.credentials)
         val errors = list.collect { case Left(errors) => errors }.flatten
         errors match {
           case Nil =>
@@ -214,7 +208,7 @@ object Key {
         case e: JsonReaderException =>
           Left(new Key.JsonReaderError(e))
       }
-    def write(value: List[T]): Array[Byte] = writeToArray(value.map(asJson))(jsonCodec)
+    def write(value: List[T]): Array[Byte] = writeToArray(value.map(asJson))
     def fromString(values: Seq[String]): Either[MalformedValue, List[T]] =
       Left(new Key.MalformedValue(this, values, Right(ErrorMessages.inlineCredentialsError)))
     def asString(value: List[T]): Seq[String] = value.map(_.asString)
@@ -238,9 +232,6 @@ object Key {
         credentials.httpsOnly,
         credentials.passOnRedirect
       )
-
-    def jsonCodec: JsonValueCodec[List[RepositoryCredentialsAsJson]] =
-      RepositoryCredentialsAsJson.listJsonCodec
 
     override def asString(value: List[RepositoryCredentials]): Seq[String] =
       value
@@ -267,8 +258,5 @@ object Key {
         credentials.realm,
         credentials.httpsOnly
       )
-
-    val jsonCodec: JsonValueCodec[List[PublishCredentialsAsJson]] =
-      PublishCredentialsAsJson.listJsonCodec
   }
 }

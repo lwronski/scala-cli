@@ -52,5 +52,5 @@ final case class PublishCredentialsAsJson(
 }
 
 object PublishCredentialsAsJson {
-  lazy val listJsonCodec: JsonValueCodec[List[PublishCredentialsAsJson]] = JsonCodecMaker.make
+  implicit lazy val listJsonCodec: JsonValueCodec[List[PublishCredentialsAsJson]] = JsonCodecMaker.make
 }

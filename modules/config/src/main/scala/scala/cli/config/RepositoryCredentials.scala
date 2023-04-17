@@ -64,5 +64,5 @@ final case class RepositoryCredentialsAsJson(
 }
 
 object RepositoryCredentialsAsJson {
-  lazy val listJsonCodec: JsonValueCodec[List[RepositoryCredentialsAsJson]] = JsonCodecMaker.make
+  implicit lazy val listJsonCodec: JsonValueCodec[List[RepositoryCredentialsAsJson]] = JsonCodecMaker.make
 }
