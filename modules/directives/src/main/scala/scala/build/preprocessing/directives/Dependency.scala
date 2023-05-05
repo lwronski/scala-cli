@@ -1,21 +1,13 @@
 package scala.build.preprocessing.directives
 
 import dependency.AnyDependency
-import dependency.parser.DependencyParser
 
 import scala.build.EitherCps.{either, value}
-import scala.build.Ops.*
+import scala.build.Positioned
 import scala.build.directives.*
-import scala.build.errors.{BuildException, CompositeBuildException, DependencyFormatError}
-import scala.build.options.{
-  BuildOptions,
-  ClassPathOptions,
-  Scope,
-  ShadowingSeq,
-  WithBuildRequirements
-}
-import scala.build.preprocessing.ScopePath
-import scala.build.{Logger, Positioned}
+import scala.build.errors.BuildException
+import scala.build.options.{BuildOptions, ClassPathOptions, Scope, ShadowingSeq}
+import scala.build.preprocessing.directives.DirectiveUtil.*
 import scala.cli.commands.SpecificationLevel
 
 @DirectiveExamples("//> using dep com.lihaoyi::os-lib:0.9.1")
@@ -41,39 +33,19 @@ final case class Dependency(
   @DirectiveName("test.deps")
   @DirectiveName("test.dependencies")
   testDependency: List[Positioned[String]] = Nil
-) extends HasBuildOptionsWithRequirements {
-  def buildOptionsWithRequirements
-    : Either[BuildException, List[WithBuildRequirements[BuildOptions]]] =
-    for {
-      globalBuildOptions <- Dependency.buildOptions(dependency)
-      testBuildOptions   <- Dependency.buildOptions(testDependency)
-    } yield List(
-      globalBuildOptions.withEmptyRequirements,
-      testBuildOptions.withScopeRequirement(Scope.Test)
-    )
-
+) extends HasBuildOptionsWithTargetScopeRequirements(
+      List(
+        dependency     -> None,
+        testDependency -> Some(Scope.Test)
+      )
+    ) {
+  def buildOptions(ds: List[Positioned[String]]): Either[BuildException, BuildOptions] = either {
+    val dependencies: ShadowingSeq[Positioned[AnyDependency]] =
+      value(ds.asDependencies.map(ShadowingSeq.from))
+    BuildOptions(classPathOptions = ClassPathOptions(extraDependencies = dependencies))
+  }
 }
 
 object Dependency {
   val handler: DirectiveHandler[Dependency] = DirectiveHandler.derive
-
-  def buildOptions(deps: List[Positioned[String]]): Either[BuildException, BuildOptions] = either {
-    val maybeDependencies = deps
-      .map { posStr =>
-        posStr
-          .map { str =>
-            DependencyParser.parse(str)
-              .left.map(err => new DependencyFormatError(str, err))
-          }
-          .eitherSequence
-      }
-      .sequence
-      .left.map(CompositeBuildException(_))
-    val dependencies = value(maybeDependencies)
-    BuildOptions(
-      classPathOptions = ClassPathOptions(
-        extraDependencies = ShadowingSeq.from(dependencies)
-      )
-    )
-  }
 }

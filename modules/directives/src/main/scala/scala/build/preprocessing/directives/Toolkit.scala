@@ -1,23 +1,13 @@
 package scala.build.preprocessing.directives
 
-import coursier.core.{Repository, Version}
 import dependency.*
 
-import scala.annotation.tailrec
-import scala.build.EitherCps.{either, value}
+import scala.build.Positioned
 import scala.build.directives.*
 import scala.build.errors.BuildException
 import scala.build.internal.Constants
-import scala.build.options.{
-  BuildOptions,
-  ClassPathOptions,
-  JavaOpt,
-  Scope,
-  ShadowingSeq,
-  WithBuildRequirements
-}
-import scala.build.preprocessing.directives.Toolkit.buildOptions
-import scala.build.{Artifacts, Logger, Positioned, options}
+import scala.build.options.{BuildOptions, ClassPathOptions, Scope, ShadowingSeq}
+import scala.build.preprocessing.directives.Toolkit.resolveDependency
 import scala.cli.commands.SpecificationLevel
 
 @DirectiveGroupName("Toolkit")
@@ -34,38 +24,33 @@ final case class Toolkit(
   toolkit: Option[Positioned[String]] = None,
   @DirectiveName("test.toolkit")
   testToolkit: Option[Positioned[String]] = None
-) extends HasBuildOptionsWithRequirements {
-  def buildOptionsWithRequirements
-    : Either[BuildException, List[WithBuildRequirements[BuildOptions]]] =
+) extends HasBuildOptionsWithTargetScopeRequirements(
+      toolkit.map(_ -> None).toList ++ testToolkit.map(_ -> Some(Scope.Test)).toList
+    ) {
+  def buildOptions(t: Positioned[String]): Either[BuildException, BuildOptions] =
     Right {
-      val mainBuildOpts = buildOptions(toolkit)
-      val testBuildOpts = buildOptions(testToolkit)
-      mainBuildOpts.toList.map(_.withEmptyRequirements) ++ testBuildOpts.toList.map(
-        _.withScopeRequirement(Scope.Test)
+      BuildOptions(
+        classPathOptions = ClassPathOptions(
+          extraDependencies = ShadowingSeq.from(List(resolveDependency(t)))
+        )
       )
     }
 }
 
 object Toolkit {
-  def resolveDependency(toolkitCoord: Positioned[String]) = toolkitCoord.map(coord =>
-    val tokens  = coord.split(':')
-    val version = tokens.last
-    val v       = if version == "latest" then "latest.release" else version
-    val flavor  = tokens.dropRight(1).headOption
-    val org = flavor match {
-      case Some("typelevel") => Constants.typelevelOrganization
-      case Some(org)         => org
-      case None              => Constants.toolkitOrganization
-    }
-    dep"$org::${Constants.toolkitName}::$v,toolkit"
-  )
-  val handler: DirectiveHandler[Toolkit] = DirectiveHandler.derive
-
-  def buildOptions(toolkit: Option[Positioned[String]]): Option[BuildOptions] = toolkit.map { t =>
-    BuildOptions(
-      classPathOptions = ClassPathOptions(
-        extraDependencies = ShadowingSeq.from(List(resolveDependency(t)))
-      )
+  def resolveDependency(toolkitCoords: Positioned[String])
+    : Positioned[DependencyLike[NameAttributes, NameAttributes]] =
+    toolkitCoords.map(coords =>
+      val tokens  = coords.split(':')
+      val version = tokens.last
+      val v       = if version == "latest" then "latest.release" else version
+      val flavor  = tokens.dropRight(1).headOption
+      val org = flavor match {
+        case Some("typelevel") => Constants.typelevelOrganization
+        case Some(org)         => org
+        case None              => Constants.toolkitOrganization
+      }
+      dep"$org::${Constants.toolkitName}::$v,toolkit"
     )
-  }
+  val handler: DirectiveHandler[Toolkit] = DirectiveHandler.derive
 }

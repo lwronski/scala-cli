@@ -1,17 +1,9 @@
 package scala.build.preprocessing.directives
 
+import scala.build.Positioned
 import scala.build.directives.*
 import scala.build.errors.BuildException
-import scala.build.options.{
-  BuildOptions,
-  ScalaOptions,
-  ScalacOpt,
-  Scope,
-  ShadowingSeq,
-  WithBuildRequirements
-}
-import scala.build.preprocessing.directives.ScalacOptions.buildOptions
-import scala.build.{Logger, Positioned}
+import scala.build.options.{BuildOptions, ScalaOptions, ScalacOpt, Scope, ShadowingSeq}
 import scala.cli.commands.SpecificationLevel
 
 @DirectiveGroupName("Compiler options")
@@ -33,21 +25,19 @@ final case class ScalacOptions(
   @DirectiveName("test.options")
   @DirectiveName("test.scalacOptions")
   testOptions: List[Positioned[String]] = Nil
-) extends HasBuildOptionsWithRequirements {
-  def buildOptionsWithRequirements
-    : Either[BuildException, List[WithBuildRequirements[BuildOptions]]] =
-    Right(List(
-      buildOptions(options).withEmptyRequirements,
-      buildOptions(testOptions).withScopeRequirement(Scope.Test)
-    ))
+) extends HasBuildOptionsWithTargetScopeRequirements(
+      List(options -> None, testOptions -> Some(Scope.Test))
+    ) {
+  def buildOptions(options: List[Positioned[String]]): Either[BuildException, BuildOptions] =
+    Right {
+      BuildOptions(
+        scalaOptions = ScalaOptions(
+          scalacOptions = ShadowingSeq.from(options.map(_.map(ScalacOpt(_))))
+        )
+      )
+    }
 }
 
 object ScalacOptions {
   val handler: DirectiveHandler[ScalacOptions] = DirectiveHandler.derive
-  def buildOptions(options: List[Positioned[String]]): BuildOptions =
-    BuildOptions(
-      scalaOptions = ScalaOptions(
-        scalacOptions = ShadowingSeq.from(options.map(_.map(ScalacOpt(_))))
-      )
-    )
 }

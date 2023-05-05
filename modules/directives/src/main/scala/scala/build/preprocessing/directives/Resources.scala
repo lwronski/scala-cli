@@ -1,17 +1,9 @@
 package scala.build.preprocessing.directives
 
+import scala.build.Positioned
 import scala.build.directives.*
 import scala.build.errors.BuildException
-import scala.build.options.{
-  BuildOptions,
-  ClassPathOptions,
-  JavaOpt,
-  Scope,
-  ShadowingSeq,
-  WithBuildRequirements
-}
-import scala.build.preprocessing.directives.Resources.buildOptions
-import scala.build.{Logger, Positioned, options}
+import scala.build.options.{BuildOptions, ClassPathOptions, Scope}
 import scala.cli.commands.SpecificationLevel
 
 @DirectiveGroupName("Resource directories")
@@ -34,19 +26,11 @@ final case class Resources(
   @DirectiveName("test.resourceDir")
   testResourceDirs: DirectiveValueParser.WithScopePath[List[Positioned[String]]] =
     DirectiveValueParser.WithScopePath.empty(Nil)
-) extends HasBuildOptionsWithRequirements {
-  def buildOptionsWithRequirements
-    : Either[BuildException, List[WithBuildRequirements[BuildOptions]]] =
-    Right(List(
-      buildOptions(resourceDirs).withEmptyRequirements,
-      buildOptions(testResourceDirs).withScopeRequirement(Scope.Test)
-    ))
-}
-
-object Resources {
-  val handler: DirectiveHandler[Resources] = DirectiveHandler.derive
+) extends HasBuildOptionsWithTargetScopeRequirements(
+      List(resourceDirs -> None, testResourceDirs -> Some(Scope.Test))
+    ) {
   def buildOptions(resourceDirs: DirectiveValueParser.WithScopePath[List[Positioned[String]]])
-    : BuildOptions = {
+    : Either[BuildException, BuildOptions] = Right {
     val paths = resourceDirs.value.map(_.value)
 
     val (virtualRootOpt, rootOpt) = Directive.osRootResource(resourceDirs.scopePath)
@@ -70,4 +54,8 @@ object Resources {
       )
     )
   }
+}
+
+object Resources {
+  val handler: DirectiveHandler[Resources] = DirectiveHandler.derive
 }

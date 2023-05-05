@@ -2,9 +2,8 @@ package scala.build.preprocessing.directives
 
 import scala.build.directives.*
 import scala.build.errors.BuildException
-import scala.build.options.{BuildOptions, JavaOpt, Scope, ShadowingSeq, WithBuildRequirements}
-import scala.build.preprocessing.directives.JavaOptions.buildOptions
-import scala.build.{Logger, Positioned, options}
+import scala.build.options.{BuildOptions, JavaOpt, Scope, ShadowingSeq}
+import scala.build.{Positioned, options}
 import scala.cli.commands.SpecificationLevel
 
 @DirectiveGroupName("Java options")
@@ -21,19 +20,17 @@ final case class JavaOptions(
   javaOptions: List[Positioned[String]] = Nil,
   @DirectiveName("test.javaOpt")
   testJavaOptions: List[Positioned[String]] = Nil
-) extends HasBuildOptionsWithRequirements {
-  def buildOptionsWithRequirements
-    : Either[BuildException, List[WithBuildRequirements[BuildOptions]]] =
-    Right(List(
-      buildOptions(javaOptions).withEmptyRequirements,
-      buildOptions(testJavaOptions).withScopeRequirement(Scope.Test)
-    ))
+) extends HasBuildOptionsWithTargetScopeRequirements(
+      List(javaOptions -> None, testJavaOptions -> Some(Scope.Test))
+    ) {
+  def buildOptions(javaOptions: List[Positioned[String]]): Either[BuildException, BuildOptions] =
+    Right {
+      BuildOptions(javaOptions =
+        options.JavaOptions(javaOpts = ShadowingSeq.from(javaOptions.map(_.map(JavaOpt(_)))))
+      )
+    }
 }
 
 object JavaOptions {
   val handler: DirectiveHandler[JavaOptions] = DirectiveHandler.derive
-  def buildOptions(javaOptions: List[Positioned[String]]): BuildOptions =
-    BuildOptions(javaOptions =
-      options.JavaOptions(javaOpts = ShadowingSeq.from(javaOptions.map(_.map(JavaOpt(_)))))
-    )
 }
