@@ -9,18 +9,12 @@ sealed trait HasBuildOptionsWithRequirements {
     : Either[BuildException, List[WithBuildRequirements[BuildOptions]]]
 }
 
-trait HasBuildOptionsWithTargetScopeRequirements[T](valuesWithTargetScope: List[(T, Option[Scope])])
+trait HasBuildOptionsWithTargetScopeRequirements
     extends HasBuildOptionsWithRequirements {
-  def buildOptions(value: T): Either[BuildException, BuildOptions]
+  def buildOptions: List[Either[BuildException,WithBuildRequirements[BuildOptions]]]
   final def buildOptionsWithRequirements
     : Either[BuildException, List[WithBuildRequirements[BuildOptions]]] =
-    (for { (value, maybeTargetScope) <- valuesWithTargetScope } yield buildOptions(
-      value
-    ) -> maybeTargetScope match
-      case (Right(bo), Some(scope)) => Right(bo.withScopeRequirement(scope))
-      case (Right(bo), None)        => Right(bo.withEmptyRequirements)
-      case (Left(e), _)             => Left(e)
-    )
+    buildOptions
       .sequence
       .left.map(CompositeBuildException(_))
       .map(_.toList)

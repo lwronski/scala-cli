@@ -30,11 +30,19 @@ final case class CustomJar(
   @DirectiveName("test.jars")
   testJar: DirectiveValueParser.WithScopePath[List[Positioned[String]]] =
     DirectiveValueParser.WithScopePath.empty(Nil)
-) extends HasBuildOptionsWithTargetScopeRequirements(
-      List(jar -> None, testJar -> Some(Scope.Test))
-    ) {
-  def buildOptions(jar: DirectiveValueParser.WithScopePath[List[Positioned[String]]])
-    : Either[BuildException, BuildOptions] = {
+) extends HasBuildOptionsWithTargetScopeRequirements {
+  override def buildOptions: List[Either[BuildException,WithBuildRequirements[BuildOptions]]] =
+    List(
+      CustomJar.buildJarOptions(jar).map(_.withEmptyRequirements),
+      CustomJar.buildJarOptions(testJar).map(_.withScopeRequirement(Scope.Test))
+    )
+
+}
+
+object CustomJar {
+  val handler: DirectiveHandler[CustomJar] = DirectiveHandler.derive
+  def buildJarOptions(jar: DirectiveValueParser.WithScopePath[List[Positioned[String]]])
+  : Either[BuildException, BuildOptions] = {
     val cwd = jar.scopePath
     jar.value
       .map { posPathStr =>
@@ -56,9 +64,4 @@ final case class CustomJar(
         )
       }
   }
-
-}
-
-object CustomJar {
-  val handler: DirectiveHandler[CustomJar] = DirectiveHandler.derive
 }
