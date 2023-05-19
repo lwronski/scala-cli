@@ -733,20 +733,22 @@ abstract class TestTestDefinitions(val scalaVersionOpt: Option[String])
     }
   }
 
-  test("toolkit") {
-    successfulTestInputs("//> using toolkit latest").fromRoot { root =>
-      val output = os.proc(TestUtil.cli, "test", extraOptions, ".").call(cwd = root).out.text()
-      expect(output.contains("Hello from tests"))
+  for (toolkitVersion <- Seq("latest", Constants.toolkitVersion, Constants.preToolkitTestVersion)) {
+    test(s"toolkit ($toolkitVersion)") {
+      successfulTestInputs(s"//> using toolkit $toolkitVersion").fromRoot { root =>
+        val output = os.proc(TestUtil.cli, "test", extraOptions, ".").call(cwd = root).out.text()
+        expect(output.contains("Hello from tests"))
+      }
     }
-  }
 
-  test("toolkit from command line") {
-    successfulTestInputs("").fromRoot { root =>
-      val output =
-        os.proc(TestUtil.cli, "test", extraOptions, ".", "--toolkit", "latest").call(cwd =
-          root
-        ).out.text()
-      expect(output.contains("Hello from tests"))
+    test(s"toolkit ($toolkitVersion) from command line") {
+      successfulTestInputs("").fromRoot { root =>
+        val output =
+          os.proc(TestUtil.cli, "test", extraOptions, ".", "--toolkit", toolkitVersion).call(cwd =
+            root
+          ).out.text()
+        expect(output.contains("Hello from tests"))
+      }
     }
   }
 }

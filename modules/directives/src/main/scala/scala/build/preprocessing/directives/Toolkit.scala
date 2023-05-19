@@ -7,6 +7,7 @@ import scala.build.directives.*
 import scala.build.errors.BuildException
 import scala.build.internal.Constants
 import scala.build.options.BuildRequirements.ScopeRequirement
+import scala.build.options.ScalaVersionUtil.asVersion
 import scala.build.options.WithBuildRequirements.*
 import scala.build.options.{
   BuildOptions,
@@ -52,7 +53,8 @@ object Toolkit {
           case Some(org)         => org
           case None              => Constants.toolkitOrganization
         }
-        if org == Constants.toolkitOrganization then
+        if org == Constants.toolkitOrganization && (version == "latest" || v.asVersion > "0.1.6".asVersion)
+        then
           List(
             Positioned(positions, dep"$org::${Constants.toolkitName}::$v,toolkit")
               .withEmptyRequirements,

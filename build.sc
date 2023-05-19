@@ -938,6 +938,9 @@ trait CliIntegration extends SbtModule with ScalaCliPublishModule with HasTests
            |
            |  def ghOrg = "$ghOrg"
            |  def ghName = "$ghName"
+           |
+           |  def toolkitVersion        = "${Deps.toolkit.dep.version}"
+           |  def preToolkitTestVersion = "${Deps.preToolkitTest.dep.version}"
            |}
            |""".stripMargin
       if (!os.isFile(dest) || os.read(dest) != code)
