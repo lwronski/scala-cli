@@ -34,14 +34,19 @@ final case class Toolkit(
   @DirectiveName("test.toolkit")
   testToolkit: Option[Positioned[String]] = None
 ) extends HasBuildOptionsWithRequirements {
-  def buildOptionsList: List[Either[BuildException, WithBuildRequirements[BuildOptions]]] =
-    Toolkit.buildOptionsWithScopeRequirement(toolkit, defaultScope = None) ++
-      Toolkit.buildOptionsWithScopeRequirement(testToolkit, defaultScope = Some(Scope.Test))
+  def buildOptionsList: List[Either[BuildException, WithBuildRequirements[BuildOptions]]] = List(
+    Right(Toolkit.buildOptions(toolkit, defaultScope = None).withEmptyRequirements),
+    Right(Toolkit.buildOptions(testToolkit, defaultScope = Some(Scope.Test)).withScopeRequirement(
+      Scope.Test
+    ))
+  )
 }
 
 object Toolkit {
-  def resolveDependenciesWithRequirements(toolkitCoords: Positioned[String])
-    : List[WithBuildRequirements[Positioned[DependencyLike[NameAttributes, NameAttributes]]]] =
+  def resolveDependenciesWithRequirements(toolkitCoords: Positioned[String]): (
+    Positioned[DependencyLike[NameAttributes, NameAttributes]],
+    Option[Positioned[DependencyLike[NameAttributes, NameAttributes]]]
+  ) =
     toolkitCoords match
       case Positioned(positions, coords) =>
         val tokens  = coords.split(':')
@@ -55,50 +60,27 @@ object Toolkit {
         }
         if org == Constants.toolkitOrganization && (version == "latest" || v.asVersion > "0.1.6".asVersion)
         then
-          List(
-            Positioned(positions, dep"$org::${Constants.toolkitName}::$v,toolkit")
-              .withEmptyRequirements,
-            Positioned(positions, dep"$org::${Constants.toolkitTestName}::$v,toolkit")
-              .withScopeRequirement(Scope.Test)
+          (
+            Positioned(positions, dep"$org::${Constants.toolkitName}::$v,toolkit"),
+            Some(Positioned(positions, dep"$org::${Constants.toolkitTestName}::$v,toolkit"))
           )
         else
-          List(
-            Positioned(positions, dep"$org::${Constants.toolkitName}::$v,toolkit")
-              .withEmptyRequirements
+          (
+            Positioned(positions, dep"$org::${Constants.toolkitName}::$v,toolkit"),
+            None
           )
   val handler: DirectiveHandler[Toolkit] = DirectiveHandler.derive
-  private def buildOptionsWithScopeRequirement(
-    t: Option[Positioned[String]],
+  private def buildOptions(
+    toolkit: Option[Positioned[String]],
     defaultScope: Option[Scope]
-  ): List[Either[BuildException, WithBuildRequirements[BuildOptions]]] = t
-    .toList
-    .flatMap(resolveDependenciesWithRequirements)
-    .map { case WithBuildRequirements(requirements, positionedDep) =>
-      positionedDep
-        .withBuildRequirements {
-          if requirements.scope.isEmpty then
-            requirements.copy(scope = defaultScope.map(_.asScopeRequirement))
-          else requirements
-        }
-        .map { dep =>
-          BuildOptions(
-            classPathOptions = ClassPathOptions(
-              extraDependencies = ShadowingSeq.from(List(dep))
-            )
-          )
-        }
-    }
-    .groupBy(_.requirements.scope.map(_.scope))
-    .toList
-    .map { (scope: Option[Scope], boWithReqsList: List[WithBuildRequirements[BuildOptions]]) =>
-      Right {
-        boWithReqsList.foldLeft {
-          scope
-            .map(s => BuildOptions.empty.withScopeRequirement(s))
-            .getOrElse(BuildOptions.empty.withEmptyRequirements)
-        } { (acc, boWithReqs) =>
-          acc.map(_ orElse boWithReqs.value)
-        }
-      }
-    }
+  ): BuildOptions = toolkit match {
+    case Some(toolkit) =>
+      val (toolkitDep, toolkitTestDep) = resolveDependenciesWithRequirements(toolkit)
+      BuildOptions(
+        classPathOptions = ClassPathOptions(
+          extraDependencies = ShadowingSeq.from(toolkitDep +: toolkitTestDep.toSeq)
+        )
+      )
+  }
+
 }
