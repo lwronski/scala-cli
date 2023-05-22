@@ -34,16 +34,14 @@ final case class Toolkit(
   @DirectiveName("test.toolkit")
   testToolkit: Option[Positioned[String]] = None
 ) extends HasBuildOptionsWithRequirements {
-  def buildOptionsList: List[Either[BuildException, WithBuildRequirements[BuildOptions]]] = List(
-    Right(Toolkit.buildOptions(toolkit, defaultScope = None).withEmptyRequirements),
-    Right(Toolkit.buildOptions(testToolkit, defaultScope = Some(Scope.Test)).withScopeRequirement(
-      Scope.Test
-    ))
-  )
+  def buildOptionsList: List[Either[BuildException, WithBuildRequirements[BuildOptions]]] =
+    Toolkit.resolveDependenciesWithWithRequirements(toolkit) ++
+      Toolkit.resolveDependenciesWithWithRequirements(testToolkit)
+
 }
 
 object Toolkit {
-  def resolveDependenciesWithRequirements(toolkitCoords: Positioned[String]): (
+  def resolveDependencies(toolkitCoords: Positioned[String]): (
     Positioned[DependencyLike[NameAttributes, NameAttributes]],
     Option[Positioned[DependencyLike[NameAttributes, NameAttributes]]]
   ) =
@@ -70,17 +68,24 @@ object Toolkit {
             None
           )
   val handler: DirectiveHandler[Toolkit] = DirectiveHandler.derive
+  private def resolveDependenciesWithWithRequirements(toolkitOpt: Option[Positioned[String]])
+    : List[Either[BuildException, WithBuildRequirements[BuildOptions]]] =
+    toolkitOpt match {
+      case Some(toolkit) =>
+        val (toolkitDep, toolkitTestDepOpt) = Toolkit.resolveDependencies(toolkit)
+        List(Right(Toolkit.buildOptions(toolkitDep).withEmptyRequirements)) ++
+          toolkitTestDepOpt.toList.map(dep =>
+            Right(Toolkit.buildOptions(dep).withScopeRequirement(Scope.Test))
+          )
+      case None => Nil
+    }
   private def buildOptions(
-    toolkit: Option[Positioned[String]],
-    defaultScope: Option[Scope]
-  ): BuildOptions = toolkit match {
-    case Some(toolkit) =>
-      val (toolkitDep, toolkitTestDep) = resolveDependenciesWithRequirements(toolkit)
-      BuildOptions(
-        classPathOptions = ClassPathOptions(
-          extraDependencies = ShadowingSeq.from(toolkitDep +: toolkitTestDep.toSeq)
-        )
+    toolkitDep: Positioned[AnyDependency]
+  ): BuildOptions =
+    BuildOptions(
+      classPathOptions = ClassPathOptions(
+        extraDependencies = ShadowingSeq.from(Seq(toolkitDep))
       )
-  }
+    )
 
 }
