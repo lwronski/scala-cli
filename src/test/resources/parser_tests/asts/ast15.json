@@ -10,28 +10,28 @@
                 {
                   "key": ">=",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "2.13"
                   }
                 },
                 {
                   "key": "<=",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "3.1.0"
                   }
                 },
                 {
                   "key": ">",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "2.12"
                   }
                 },
                 {
                   "key": "<",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "2.11"
                   }
                 }

@@ -157,6 +157,7 @@ public class Scanner {
           }
         }
         break;
+      case STRINGLITDOUBLEQUOTE:
       case STRINGLIT:
         if (currentRegion instanceof InString) {
           InString is = (InString) currentRegion;
@@ -798,7 +799,7 @@ public class Scanner {
     if (reader.ch == '"') {
       setStrVal();
       reader.nextChar();
-      td.token = Tokens.STRINGLIT;
+      td.token = Tokens.STRINGLITDOUBLEQUOTE;
     } else {
       // try to recover from started string
       setStrVal();
@@ -1071,6 +1072,8 @@ public class Scanner {
         return String.format("double(%s)", td.strVal);
       case STRINGLIT:
         return String.format("string(%s)", td.strVal);
+      case STRINGLITDOUBLEQUOTE:
+        return String.format("stringDoubleQuotes(%s)", td.strVal);
       case STRINGPART:
         return String.format("stringpart(%s)", td.strVal);
       case INTERPOLATIONID:

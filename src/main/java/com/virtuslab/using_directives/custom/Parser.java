@@ -265,7 +265,7 @@ public class Parser {
   String scope() {
     if (in.td.token == Tokens.IDENTIFIER && in.td.name.equals("in")) {
       in.nextToken();
-      if (in.td.token == Tokens.STRINGLIT) {
+      if (in.td.token == Tokens.STRINGLIT || in.td.token == Tokens.STRINGLITDOUBLEQUOTE) {
         String scope = in.td.strVal;
         in.nextToken();
         return scope;
@@ -292,7 +292,10 @@ public class Parser {
     UsingPrimitive res = null;
     String solution = "Wrapping identifier in quotes usually solves the problem.";
     if (in.td.token == Tokens.STRINGLIT) {
-      res = new StringLiteral(in.td.strVal, source.getPositionFromOffset(offset));
+      res = new StringLiteral(in.td.strVal, source.getPositionFromOffset(offset), false);
+      in.nextToken();
+    } else if (in.td.token == Tokens.STRINGLITDOUBLEQUOTE) {
+      res = new StringLiteral(in.td.strVal, source.getPositionFromOffset(offset), true);
       in.nextToken();
     } else if (in.td.token == Tokens.IDENTIFIER && in.td.name.equals("-")) {
       in.nextToken();

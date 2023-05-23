@@ -12,15 +12,23 @@ public class StringLiteral extends UsingPrimitive {
   }
 
   private String value;
+  private Boolean isWrappedDoubleQuotes;
 
-  public StringLiteral(String value, Position position) {
-    super(position);
-    this.value = value;
+  public Boolean getIsWrappedDoubleQuotes() {
+    return isWrappedDoubleQuotes;
   }
 
-  public StringLiteral(String value, Position position, String scope) {
+  public StringLiteral(String value, Position position, Boolean isWrappedDoubleQuota) {
+    super(position);
+    this.value = value;
+    this.isWrappedDoubleQuotes = isWrappedDoubleQuota;
+  }
+
+  public StringLiteral(
+      String value, Position position, String scope, Boolean isWrappedDoubleQuota) {
     super(position, scope);
     this.value = value;
+    this.isWrappedDoubleQuotes = isWrappedDoubleQuota;
   }
 
   public StringLiteral() {}

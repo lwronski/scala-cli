@@ -6,7 +6,7 @@
           {
             "key": "cs.repository",
             "value": {
-              "type": "string",
+              "type": "stringDoubleQuotes",
               "value": "~/.m2/local"
             }
           },
@@ -17,21 +17,21 @@
                 {
                   "key": "cs",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "org.scalameta :: munit : 0.4.3"
                   }
                 },
                 {
                   "key": "cs",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "com.atlassian.commonmark:commonmark:0.13.1"
                   }
                 },
                 {
                   "key": "file",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "../libs/Lib.jar"
                   }
                 }
@@ -45,21 +45,21 @@
                 {
                   "key": "version",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "3.0"
                   }
                 },
                 {
                   "key": "setting",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "-Xfatal-warnings"
                   }
                 },
                 {
                   "key": "setting",
                   "value": {
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "-d ~/classes"
                   }
                 }
@@ -80,7 +80,7 @@
                         "value": "-2"
                       },
                       {
-                        "type": "string",
+                        "type": "stringDoubleQuotes",
                         "value": "XD"
                       },
                       {

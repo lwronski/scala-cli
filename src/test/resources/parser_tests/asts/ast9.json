@@ -6,7 +6,7 @@
           {
             "key": "lib.file",
             "value": {
-              "type": "string",
+              "type": "stringDoubleQuotes",
               "value": "../libs/Lib.jar"
             }
           }
@@ -19,7 +19,7 @@
           {
             "key": "lib.cs",
             "value": {
-              "type": "string",
+              "type": "stringDoubleQuotes",
               "value": "org.scalameta :: munit : 0.4.3"
             }
           }
@@ -32,7 +32,7 @@
           {
             "key": "lib.cs",
             "value": {
-              "type": "string",
+              "type": "stringDoubleQuotes",
               "value": "com.atlassian.commonmark:commonmark:0.13.1"
             }
           }
@@ -48,11 +48,11 @@
               "type": "list",
               "value": [
                 {
-                  "type": "string",
+                  "type": "stringDoubleQuotes",
                   "value": "-Xfatal-warnings"
                 },
                 {
-                  "type": "string",
+                  "type": "stringDoubleQuotes",
                   "value": "-d ~/classes"
                 }
               ]

@@ -11,7 +11,7 @@
                   "key": ">=",
                   "value": {
                     "scope": "2.13/",
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "2.13"
                   }
                 },
@@ -19,7 +19,7 @@
                   "key": "<=",
                   "value": {
                     "scope": "3.1.0/",
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "3.1.0"
                   }
                 }
@@ -34,7 +34,7 @@
                   "key": "scope",
                   "value": {
                     "scope": "test/",
-                    "type": "string",
+                    "type": "stringDoubleQuotes",
                     "value": "test"
                   }
                 }
@@ -48,12 +48,12 @@
               "value": [
                 {
                   "scope": "js/",
-                  "type": "string",
+                  "type": "stringDoubleQuotes",
                   "value": "scala-js"
                 },
                 {
                   "scope": "js/",
-                  "type": "string",
+                  "type": "stringDoubleQuotes",
                   "value": "scala-native"
                 }
               ]

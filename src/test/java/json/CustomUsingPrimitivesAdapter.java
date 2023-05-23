@@ -21,8 +21,10 @@ public class CustomUsingPrimitivesAdapter
       return new BooleanLiteral(jsonObj.get("value").getAsBoolean(), pos, scope);
     } else if (type.equals("numeric")) {
       return new NumericLiteral(jsonObj.get("value").getAsString(), pos, scope);
+    } else if (type.equals("stringDoubleQuotes")) {
+      return new StringLiteral(jsonObj.get("value").getAsString(), pos, scope, true);
     } else if (type.equals("string")) {
-      return new StringLiteral(jsonObj.get("value").getAsString(), pos, scope);
+      return new StringLiteral(jsonObj.get("value").getAsString(), pos, scope, false);
     } else if (type.equals("empty")) {
       return new EmptyLiteral(pos, scope);
     } else {
@@ -45,7 +47,11 @@ public class CustomUsingPrimitivesAdapter
       jsonObj.addProperty("type", "numeric");
       jsonObj.addProperty("value", ((NumericLiteral) src).getValue());
     } else if (src instanceof StringLiteral) {
-      jsonObj.addProperty("type", "string");
+      if (((StringLiteral) src).getIsWrappedDoubleQuotes()) {
+        jsonObj.addProperty("type", "stringDoubleQuotes");
+      } else {
+        jsonObj.addProperty("type", "string");
+      }
       jsonObj.addProperty("value", ((StringLiteral) src).getValue());
     } else if (src instanceof EmptyLiteral) {
       jsonObj.addProperty("type", "empty");
