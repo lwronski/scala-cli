@@ -3,6 +3,7 @@ on:
   push:
     branches:
     - main
+    - test-3.3.1-RC1
     tags:
     - "v*"
   pull_request:
